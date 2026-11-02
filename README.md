@@ -1,6 +1,6 @@
 # Working Genius Team Map
 
-A single-page team map with live filters for teammates and all six Working Genius types.
+A single-page team map with interactive member and assessment-category filters.
 
 ## Run locally
 
@@ -15,7 +15,7 @@ For production, run `npm run build` and then `npm start`. The Node.js server ser
 
 ## Team data
 
-Choose a `.json` file from **Upload team JSON**. The file is read in your browser and is not uploaded to the server. Team data is kept only in the current page; upload it again after refreshing.
+Choose a `.json` file from **Upload team JSON**. The file is read in your browser and is not uploaded to the server. Team data is kept only in the current page; upload it again after refreshing. In Team Distribution, click a category label to show or hide that assessment. Use the team-member controls to include or exclude people; excluded names are struck through there and omitted from the distribution. Click a visible name in the distribution to focus on that person, then click them again to restore the previous member selection.
 
 Each record must have a first and last name, exactly two entries in each assessment group, and each of the six Working Genius types exactly once across those groups:
 

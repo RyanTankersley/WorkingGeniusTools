@@ -20,7 +20,6 @@ interface TeamMember {
 
 interface GeniusDetails {
   short: string;
-  description: string;
   tint: string;
 }
 
@@ -36,32 +35,26 @@ const geniusTypes: WorkingGenius[] = [
 const geniusDetails: Record<WorkingGenius, GeniusDetails> = {
   Wonder: {
     short: "W",
-    description: "Ponders the potential",
     tint: "wonder",
   },
   Invention: {
     short: "I",
-    description: "Creates new ideas",
     tint: "invention",
   },
   Discernment: {
     short: "D",
-    description: "Finds the right fit",
     tint: "discernment",
   },
   Galvanizing: {
     short: "G",
-    description: "Rallies people to act",
     tint: "galvanizing",
   },
   Enablement: {
     short: "E",
-    description: "Offers help and support",
     tint: "enablement",
   },
   Tenacity: {
     short: "T",
-    description: "Drives work to completion",
     tint: "tenacity",
   },
 };
@@ -85,10 +78,9 @@ const app: HTMLDivElement =
 
 let team: TeamMember[] = [];
 let selectedMembers = new Set<number>();
-let selectedGeniuses = new Set<WorkingGenius>(geniusTypes);
 let selectedAssessments = new Set<Assessment>(assessments);
+let focusedMember: { index: number; previousSelection: Set<number> } | null = null;
 let importError = "";
-let importedFileName = "";
 
 function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (character) => {
@@ -183,65 +175,44 @@ function validateTeam(value: unknown): TeamMember[] {
   });
 }
 
-function renderMemberControls(): string {
+function renderMemberPill(member: TeamMember, index: number, status: Assessment): string {
+  const fullName = `${member.FNAME} ${member.LNAME}`;
+  const isFocused = focusedMember?.index === index;
+  return `
+    <button
+      type="button"
+      class="person-pill ${status.toLowerCase()} ${isFocused ? "is-focused" : ""}"
+      data-focus-member-index="${index}"
+      aria-pressed="${isFocused}"
+      aria-label="${isFocused ? "Clear focus on" : "Focus on"} ${escapeHtml(fullName)}"
+      title="${escapeHtml(fullName)}"
+    >
+      <span class="person-avatar avatar-${index % 6}" aria-hidden="true">${escapeHtml(initials(member))}</span>
+      <span>${escapeHtml(member.FNAME)}</span>
+    </button>
+  `;
+}
+
+function renderMemberFilters(): string {
   if (team.length === 0) {
-    return `<p class="sidebar-empty">Upload a JSON file with your team's assessment results to get started.</p>`;
+    return `<span class="member-filter-empty">Upload team JSON to filter members</span>`;
   }
 
   return team
     .map((member, index) => {
-      const name = `${member.FNAME} ${member.LNAME}`;
-      const checked = selectedMembers.has(index) ? "checked" : "";
+      const isSelected = selectedMembers.has(index);
+      const fullName = `${member.FNAME} ${member.LNAME}`;
       return `
-        <label class="member-option">
-          <input type="checkbox" data-member-index="${index}" ${checked} />
-          <span class="avatar avatar-${index % 6}" aria-hidden="true">${escapeHtml(initials(member))}</span>
-          <span class="member-option-name">${escapeHtml(name)}</span>
-          <span class="member-option-count">6</span>
-        </label>
+        <button
+          type="button"
+          class="member-filter ${isSelected ? "is-selected" : "is-off"}"
+          data-member-index="${index}"
+          aria-pressed="${isSelected}"
+          aria-label="${isSelected ? "Exclude" : "Include"} ${escapeHtml(fullName)}"
+        >${escapeHtml(fullName)}</button>
       `;
     })
     .join("");
-}
-
-function renderGeniusFilters(): string {
-  return geniusTypes
-    .map((genius) => {
-      const details = geniusDetails[genius];
-      const checked = selectedGeniuses.has(genius) ? "checked" : "";
-      return `
-        <label class="type-filter ${details.tint}">
-          <input type="checkbox" data-genius="${genius}" ${checked} />
-          <span class="type-filter-icon" aria-hidden="true">${details.short}</span>
-          <span>${genius}</span>
-        </label>
-      `;
-    })
-    .join("");
-}
-
-function renderAssessmentFilters(): string {
-  return assessments
-    .map((assessment) => {
-      const checked = selectedAssessments.has(assessment) ? "checked" : "";
-      return `
-        <label class="assessment-filter ${assessment.toLowerCase()}">
-          <input type="checkbox" data-assessment="${assessment}" ${checked} />
-          <span class="assessment-filter-dot" aria-hidden="true"></span>
-          <span>${assessment}</span>
-        </label>
-      `;
-    })
-    .join("");
-}
-
-function renderMemberPill(member: TeamMember, index: number, status: Assessment): string {
-  return `
-    <span class="person-pill ${status.toLowerCase()}">
-      <span class="person-avatar avatar-${index % 6}" aria-hidden="true">${escapeHtml(initials(member))}</span>
-      <span>${escapeHtml(member.FNAME)} ${escapeHtml(member.LNAME)}</span>
-    </span>
-  `;
 }
 
 function renderAssessmentRow(
@@ -252,21 +223,19 @@ function renderAssessmentRow(
   const matches = members
     .map((member) => ({ member, index: team.indexOf(member) }))
     .filter(({ member }) => memberHasAssessment(member, status, genius));
-  const plural = matches.length === 1 ? "" : "s";
+  const visibleMatches = matches.filter(({ index }) => selectedMembers.has(index));
 
   return `
     <div class="assessment-row ${status.toLowerCase()}">
       <div class="assessment-label">
         <span class="assessment-dot"></span>
         <span>${assessmentDetails[status].label}</span>
-        <span class="assessment-count">${matches.length}</span>
+        <span class="assessment-count">${visibleMatches.length}</span>
       </div>
       <div class="assessment-people">
-        ${
-          matches.length
-            ? matches.map(({ member, index }) => renderMemberPill(member, index, status)).join("")
-            : `<span class="no-matches">No ${assessmentDetails[status].singular.toLowerCase()}${plural} in this view</span>`
-        }
+        ${visibleMatches
+          .map(({ member, index }) => renderMemberPill(member, index, status))
+          .join("")}
       </div>
     </div>
   `;
@@ -274,7 +243,12 @@ function renderAssessmentRow(
 
 function renderGeniusCard(genius: WorkingGenius, members: TeamMember[]): string {
   const details = geniusDetails[genius];
-  const geniusCount = members.filter((member) => memberHasAssessment(member, "Geniuses", genius)).length;
+  const selected = members.filter((member) =>
+    selectedMembers.has(team.indexOf(member)),
+  );
+  const geniusCount = selected.filter((member) =>
+    memberHasAssessment(member, "Geniuses", genius),
+  ).length;
   return `
     <article class="genius-card ${details.tint}">
       <div class="genius-card-header">
@@ -282,18 +256,17 @@ function renderGeniusCard(genius: WorkingGenius, members: TeamMember[]): string 
           <span class="genius-icon" aria-hidden="true">${details.short}</span>
           <div>
             <h3>${genius}</h3>
-            <p>${details.description}</p>
           </div>
         </div>
         ${
           selectedAssessments.has("Geniuses")
             ? `<span class="genius-count" title="${geniusCount} ${geniusCount === 1 ? "genius" : "geniuses"}">
-                <strong>${geniusCount}</strong><span> / ${members.length}</span>
+                <strong>${geniusCount}</strong><span> / ${selected.length}</span>
               </span>`
             : ""
         }
       </div>
-      <div class="assessment-rows">
+      <div class="assessment-columns">
         ${assessments
           .filter((assessment) => selectedAssessments.has(assessment))
           .map((assessment) => renderAssessmentRow(members, genius, assessment))
@@ -305,51 +278,20 @@ function renderGeniusCard(genius: WorkingGenius, members: TeamMember[]): string 
 
 function renderDashboard(): string {
   const members = selectedTeam();
-  const activeGeniuses = geniusTypes.filter((genius) => selectedGeniuses.has(genius));
+  const activeGeniuses = geniusTypes;
   const activeAssessments = assessments.filter((assessment) =>
     selectedAssessments.has(assessment),
   );
-  const mappedCount = members.reduce((count, member) => count + member.Geniuses.length, 0);
 
   const board =
     team.length === 0
       ? `<div class="status-card empty-card"><span class="status-icon" aria-hidden="true">↑</span><div><strong>Upload your team data to get started</strong><p>Choose a .json file containing each teammate's name, geniuses, competencies, and frustrations.</p></div></div>`
-      : activeGeniuses.length === 0
-        ? `<div class="status-card empty-card"><span class="status-icon" aria-hidden="true">✳</span><div><strong>No genius views selected</strong><p>Turn on one or more views above to explore your team.</p></div></div>`
-        : members.length === 0
-          ? `<div class="status-card empty-card"><span class="status-icon" aria-hidden="true">✳</span><div><strong>No teammates selected</strong><p>Select at least one teammate to see the team map.</p></div></div>`
-          : activeAssessments.length === 0
-            ? `<div class="status-card empty-card"><span class="status-icon" aria-hidden="true">✳</span><div><strong>No assessment categories selected</strong><p>Turn on Genius, Competencies, or Frustrations to see the team map.</p></div></div>`
-            : `<div class="genius-grid">${activeGeniuses
-                .map((genius) => renderGeniusCard(genius, members))
-                .join("")}</div>`;
+      : `<div class="genius-grid">${activeGeniuses
+          .map((genius) => renderGeniusCard(genius, team))
+          .join("")}</div>`;
 
   return `
-    <header class="topbar">
-      <a class="brand" href="/" aria-label="Working Genius team map home">
-        <span class="brand-mark">wg</span>
-        <span class="brand-divider"></span>
-        <span class="brand-name">TEAM MAP</span>
-      </a>
-      <div class="topbar-right">
-        <span class="live-indicator"><span></span> LIVE VIEW</span>
-        <span class="topbar-caption">Your team's best work, at a glance.</span>
-      </div>
-    </header>
-
     <main class="page-shell">
-      <section class="intro">
-        <div class="intro-copy">
-          <div class="eyebrow"><span class="eyebrow-line"></span> THE WAY YOUR TEAM WORKS</div>
-          <h1>Better work<br /><span>starts with knowing.</span></h1>
-          <p class="intro-description">See the gifts each person brings — and how they come together to move work forward.</p>
-        </div>
-        <div class="intro-note">
-          <span class="note-icon" aria-hidden="true">✳</span>
-          <p>Every kind of work matters.<br /><strong>Every genius belongs.</strong></p>
-        </div>
-      </section>
-
       <section class="summary-strip" aria-label="Team map summary">
         <div class="summary-item">
           <span class="summary-icon members-icon" aria-hidden="true">
@@ -360,79 +302,58 @@ function renderDashboard(): string {
         <span class="summary-divider"></span>
         <div class="summary-item">
           <span class="summary-icon genius-summary-icon" aria-hidden="true">✳</span>
-          <div><strong>${mappedCount}</strong><small>GENIUS STRENGTHS</small></div>
+          <div><strong>${activeAssessments.length}<span> / 3</span></strong><small>CATEGORIES DISPLAYED</small></div>
         </div>
         <span class="summary-divider"></span>
         <div class="summary-item">
           <span class="summary-icon views-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zM13 3h8v5h-8zM13 10h8v11h-8zM3 13h8v8H3z"/></svg>
           </span>
-          <div><strong>${activeGeniuses.length}<span> / 6</span></strong><small>VIEWS ACTIVE</small></div>
+          <div><strong>${activeGeniuses.length}<span> / 6</span></strong><small>TYPES DISPLAYED</small></div>
         </div>
         <span class="summary-spacer"></span>
         <span class="summary-live"><span></span> Updates as you filter</span>
       </section>
 
-      <div class="workspace">
-        <aside class="sidebar">
-          <div class="sidebar-heading">
-            <div><span class="section-kicker">YOUR PEOPLE</span><h2>Team members</h2></div>
-            <span class="sidebar-total">${team.length}</span>
-          </div>
-          <label class="upload-button">
-            <input id="team-file-input" type="file" accept=".json,application/json" />
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7 9m5-5 5 5M5 15v4a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-4"/></svg>
-            <span>${team.length ? "Replace team data" : "Upload team JSON"}</span>
-          </label>
-          ${
-            importedFileName
-              ? `<p class="upload-file-name" title="${escapeHtml(importedFileName)}">${escapeHtml(importedFileName)} loaded</p>`
-              : ""
-          }
-          ${
-            importError
-              ? `<p class="upload-error" role="alert">${escapeHtml(importError)}</p>`
-              : ""
-          }
-          <div class="member-actions">
-            <button type="button" class="text-button" data-action="select-all">Select all</button>
-            <span class="action-divider"></span>
-            <button type="button" class="text-button" data-action="clear-all">Clear</button>
-          </div>
-          <div class="member-list">${renderMemberControls()}</div>
-          <div class="sidebar-footer">
-            <span class="footer-lock" aria-hidden="true">◎</span>
-            <span>Private to your team</span>
-          </div>
-        </aside>
+      <section class="upload-panel" aria-label="Upload team data">
+        <label class="upload-button">
+          <input id="team-file-input" type="file" accept=".json,application/json" />
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7 9m5-5 5 5M5 15v4a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-4"/></svg>
+          <span>${team.length ? "Replace team JSON" : "Upload team JSON"}</span>
+        </label>
+        ${importError ? `<p class="upload-error" role="alert">${escapeHtml(importError)}</p>` : ""}
+      </section>
 
-        <section class="map-content">
-          <div class="map-toolbar">
-            <div>
-              <span class="section-kicker">THE WORKING GENIUS MAP</span>
-              <h2>Explore the six types</h2>
-            </div>
-            <span class="showing-count"><strong>${members.length}</strong> ${members.length === 1 ? "person" : "people"} in view</span>
+      <section class="distribution">
+        <div class="distribution-heading">
+          <div>
+            <span class="section-kicker">TEAM OVERVIEW</span>
+            <h2>Team Distribution</h2>
           </div>
-          <div class="type-filters" aria-label="Filter by Working Genius">
-            ${renderGeniusFilters()}
-          </div>
-          <div class="assessment-filters" role="group" aria-label="Filter assessment categories">
-            <span class="assessment-filters-label">SHOW</span>
-            ${renderAssessmentFilters()}
-          </div>
-          <div class="board-heading">
-            <span>TEAM DISTRIBUTION</span>
-            <span class="board-key">${activeAssessments
+          <span class="showing-count"><strong>${members.length}</strong> ${members.length === 1 ? "person" : "people"} in view</span>
+        </div>
+        <div class="board-key" role="group" aria-label="Team distribution filters">
+          <div class="category-toggles" role="group" aria-label="Assessment categories">
+            ${assessments
               .map((assessment) => {
+                const isSelected = selectedAssessments.has(assessment);
                 const key = assessmentDetails[assessment].key;
-                return `<i class="key-dot ${key}-key"></i> ${assessment}`;
+                return `<button type="button" class="category-toggle ${isSelected ? "is-selected" : "is-off"}" data-assessment="${assessment}" aria-pressed="${isSelected}">
+                  <i class="key-dot ${key}-key" aria-hidden="true"></i>
+                  <span>${assessment}</span>
+                </button>`;
               })
-              .join(" ")}</span>
+              .join("")}
           </div>
-          ${board}
-        </section>
-      </div>
+          <span class="filter-divider" aria-hidden="true"></span>
+          <div class="member-filter-group" role="group" aria-label="Team members">
+            <span class="member-filter-heading">TEAM MEMBERS</span>
+            <div class="member-toggles">${renderMemberFilters()}</div>
+          </div>
+        </div>
+        ${board}
+      </section>
+
       <footer class="page-footer">
         <span>THE WORKING GENIUS MODEL</span>
         <span>Six types. One stronger team.</span>
@@ -453,39 +374,6 @@ app.addEventListener("change", (event: Event) => {
 
   if (target.id === "team-file-input") {
     void importTeamFile(target);
-    return;
-  }
-
-  if (target.dataset.memberIndex !== undefined) {
-    const index = Number(target.dataset.memberIndex);
-    if (target.checked) {
-      selectedMembers.add(index);
-    } else {
-      selectedMembers.delete(index);
-    }
-    render();
-    return;
-  }
-
-  const genius = target.dataset.genius as WorkingGenius | undefined;
-  if (genius && geniusTypes.includes(genius)) {
-    if (target.checked) {
-      selectedGeniuses.add(genius);
-    } else {
-      selectedGeniuses.delete(genius);
-    }
-    render();
-    return;
-  }
-
-  const assessment = target.dataset.assessment as Assessment | undefined;
-  if (assessment && assessments.includes(assessment)) {
-    if (target.checked) {
-      selectedAssessments.add(assessment);
-    } else {
-      selectedAssessments.delete(assessment);
-    }
-    render();
   }
 });
 
@@ -506,7 +394,7 @@ async function importTeamFile(input: HTMLInputElement): Promise<void> {
     const importedTeam = validateTeam(JSON.parse(await file.text()) as unknown);
     team = importedTeam;
     selectedMembers = new Set(team.map((_, index) => index));
-    importedFileName = file.name;
+    focusedMember = null;
     importError = "";
   } catch (error) {
     importError =
@@ -525,17 +413,56 @@ app.addEventListener("click", (event: MouseEvent) => {
     return;
   }
 
-  const button = target.closest<HTMLButtonElement>("[data-action]");
+  const button = target.closest<HTMLButtonElement>(
+    "[data-member-index], [data-focus-member-index], [data-assessment]",
+  );
   if (!button) {
     return;
   }
 
-  if (button.dataset.action === "select-all") {
-    selectedMembers = new Set(team.map((_, index) => index));
-  } else if (button.dataset.action === "clear-all") {
-    selectedMembers.clear();
+  if (button.dataset.focusMemberIndex !== undefined) {
+    const index = Number(button.dataset.focusMemberIndex);
+    if (!Number.isInteger(index) || index < 0 || index >= team.length) {
+      return;
+    }
+
+    if (focusedMember?.index === index) {
+      selectedMembers = new Set(focusedMember.previousSelection);
+      focusedMember = null;
+    } else if (focusedMember) {
+      selectedMembers = new Set([index]);
+      focusedMember = { ...focusedMember, index };
+    } else {
+      focusedMember = { index, previousSelection: new Set(selectedMembers) };
+      selectedMembers = new Set([index]);
+    }
+  } else if (button.dataset.memberIndex !== undefined) {
+    const index = Number(button.dataset.memberIndex);
+    if (!Number.isInteger(index) || index < 0 || index >= team.length) {
+      return;
+    }
+
+    if (focusedMember) {
+      selectedMembers = new Set(focusedMember.previousSelection);
+      focusedMember = null;
+    }
+
+    if (selectedMembers.has(index)) {
+      selectedMembers.delete(index);
+    } else {
+      selectedMembers.add(index);
+    }
   } else {
-    return;
+    const assessment = button.dataset.assessment as Assessment | undefined;
+    if (!assessment || !assessments.includes(assessment)) {
+      return;
+    }
+
+    if (selectedAssessments.has(assessment)) {
+      selectedAssessments.delete(assessment);
+    } else {
+      selectedAssessments.add(assessment);
+    }
   }
   render();
 });
