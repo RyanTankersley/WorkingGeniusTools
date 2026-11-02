@@ -291,6 +291,21 @@ function renderDashboard(): string {
           .join("")}</div>`;
 
   return `
+    <header class="topbar" aria-label="Working Genius Team Map">
+      <div class="header-brand">
+        <span class="brand-mark" aria-hidden="true">wg</span>
+        <span class="header-copy">
+          <strong>Working Genius</strong>
+          <span>TEAM MAP</span>
+        </span>
+      </div>
+      <div class="header-note" aria-hidden="true">
+        <span class="header-type-dots">
+          <i></i><i></i><i></i><i></i><i></i><i></i>
+        </span>
+        <span>Six types. One stronger team.</span>
+      </div>
+    </header>
     <main class="page-shell">
       <section class="summary-strip" aria-label="Team map summary">
         <div class="summary-item">
