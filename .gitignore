@@ -1,0 +1,4 @@
+/node_modules/
+/dist/
+/data/team.json
+npm-debug.log*
