@@ -9,13 +9,15 @@ npm install
 npm run dev
 ```
 
-Open the Vite URL shown in the terminal. The development server starts the JSON API alongside it.
+Open the Vite URL shown in the terminal, then use **Upload team JSON** to select your data file.
 
-For production, run `npm run build` and then `npm start`. The Node.js server serves the built page and the team-data API on port 3000. Set `PORT` to change the port.
+For production, run `npm run build` and then `npm start`. The Node.js server serves the built page on port 3000. Set `PORT` to change the port.
 
 ## Team data
 
-Edit [`data/team.json`](./data/team.json) to replace the fictional starter team. Each record must have a first and last name, exactly two entries in each assessment group, and each of the six Working Genius types exactly once across those groups:
+Choose a `.json` file from **Upload team JSON**. The file is read in your browser and is not uploaded to the server. Team data is kept only in the current page; upload it again after refreshing.
+
+Each record must have a first and last name, exactly two entries in each assessment group, and each of the six Working Genius types exactly once across those groups:
 
 ```json
 {
@@ -27,4 +29,4 @@ Edit [`data/team.json`](./data/team.json) to replace the fictional starter team.
 }
 ```
 
-The API reads the file on each request, so edits are reflected after refreshing the page. Invalid JSON or assessment data is reported by the API rather than silently ignored.
+Invalid JSON or assessment data is reported in the page. A failed upload does not replace a team that is already loaded.

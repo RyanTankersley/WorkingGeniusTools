@@ -87,8 +87,8 @@ let team: TeamMember[] = [];
 let selectedMembers = new Set<number>();
 let selectedGeniuses = new Set<WorkingGenius>(geniusTypes);
 let selectedAssessments = new Set<Assessment>(assessments);
-let loading = true;
-let loadError = "";
+let importError = "";
+let importedFileName = "";
 
 function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (character) => {
@@ -119,9 +119,73 @@ function memberHasAssessment(
   return member[assessment].includes(genius);
 }
 
+function validateTeam(value: unknown): TeamMember[] {
+  if (!Array.isArray(value)) {
+    throw new Error("The JSON file must contain an array of team members.");
+  }
+
+  const names = new Set<string>();
+  return value.map((member: unknown, index: number) => {
+    const label = `Team member ${index + 1}`;
+    if (typeof member !== "object" || member === null || Array.isArray(member)) {
+      throw new Error(`${label} must be an object with FNAME and LNAME strings.`);
+    }
+
+    const record = member as Record<string, unknown>;
+    if (
+      typeof record.FNAME !== "string" ||
+      !record.FNAME.trim() ||
+      typeof record.LNAME !== "string" ||
+      !record.LNAME.trim()
+    ) {
+      throw new Error(`${label} must have non-empty FNAME and LNAME strings.`);
+    }
+
+    const firstName = record.FNAME.trim();
+    const lastName = record.LNAME.trim();
+    const fullName = `${firstName} ${lastName}`.toLocaleLowerCase();
+    if (names.has(fullName)) {
+      throw new Error(`Duplicate team member name: ${firstName} ${lastName}.`);
+    }
+    names.add(fullName);
+
+    const assignedTypes: unknown[] = [];
+    for (const assessment of assessments) {
+      const assignments = record[assessment];
+      if (!Array.isArray(assignments) || assignments.length !== 2) {
+        throw new Error(`${label} must have exactly two ${assessment}.`);
+      }
+      if (
+        assignments.some(
+          (type: unknown) =>
+            typeof type !== "string" || !geniusTypes.includes(type as WorkingGenius),
+        )
+      ) {
+        throw new Error(`${label} has an unknown Working Genius in ${assessment}.`);
+      }
+      assignedTypes.push(...assignments);
+    }
+
+    if (
+      new Set(assignedTypes).size !== geniusTypes.length ||
+      !geniusTypes.every((genius) => assignedTypes.includes(genius))
+    ) {
+      throw new Error(`${label} must use each of the six Working Geniuses exactly once.`);
+    }
+
+    return {
+      FNAME: firstName,
+      LNAME: lastName,
+      Geniuses: record.Geniuses as WorkingGenius[],
+      Competencies: record.Competencies as WorkingGenius[],
+      Frustrations: record.Frustrations as WorkingGenius[],
+    };
+  });
+}
+
 function renderMemberControls(): string {
   if (team.length === 0) {
-    return `<p class="sidebar-empty">Add teammates to <code>data/team.json</code> to get started.</p>`;
+    return `<p class="sidebar-empty">Upload a JSON file with your team's assessment results to get started.</p>`;
   }
 
   return team
@@ -247,10 +311,9 @@ function renderDashboard(): string {
   );
   const mappedCount = members.reduce((count, member) => count + member.Geniuses.length, 0);
 
-  const board = loading
-    ? `<div class="status-card"><span class="loader" aria-hidden="true"></span><span>Loading your team map…</span></div>`
-    : loadError
-      ? `<div class="status-card error-card"><span class="status-icon" aria-hidden="true">!</span><div><strong>We couldn’t load the team data.</strong><p>${escapeHtml(loadError)}</p></div></div>`
+  const board =
+    team.length === 0
+      ? `<div class="status-card empty-card"><span class="status-icon" aria-hidden="true">↑</span><div><strong>Upload your team data to get started</strong><p>Choose a .json file containing each teammate's name, geniuses, competencies, and frustrations.</p></div></div>`
       : activeGeniuses.length === 0
         ? `<div class="status-card empty-card"><span class="status-icon" aria-hidden="true">✳</span><div><strong>No genius views selected</strong><p>Turn on one or more views above to explore your team.</p></div></div>`
         : members.length === 0
@@ -316,6 +379,21 @@ function renderDashboard(): string {
             <div><span class="section-kicker">YOUR PEOPLE</span><h2>Team members</h2></div>
             <span class="sidebar-total">${team.length}</span>
           </div>
+          <label class="upload-button">
+            <input id="team-file-input" type="file" accept=".json,application/json" />
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7 9m5-5 5 5M5 15v4a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-4"/></svg>
+            <span>${team.length ? "Replace team data" : "Upload team JSON"}</span>
+          </label>
+          ${
+            importedFileName
+              ? `<p class="upload-file-name" title="${escapeHtml(importedFileName)}">${escapeHtml(importedFileName)} loaded</p>`
+              : ""
+          }
+          ${
+            importError
+              ? `<p class="upload-error" role="alert">${escapeHtml(importError)}</p>`
+              : ""
+          }
           <div class="member-actions">
             <button type="button" class="text-button" data-action="select-all">Select all</button>
             <span class="action-divider"></span>
@@ -373,6 +451,11 @@ app.addEventListener("change", (event: Event) => {
     return;
   }
 
+  if (target.id === "team-file-input") {
+    void importTeamFile(target);
+    return;
+  }
+
   if (target.dataset.memberIndex !== undefined) {
     const index = Number(target.dataset.memberIndex);
     if (target.checked) {
@@ -406,6 +489,36 @@ app.addEventListener("change", (event: Event) => {
   }
 });
 
+async function importTeamFile(input: HTMLInputElement): Promise<void> {
+  const file = input.files?.[0];
+  input.value = "";
+  if (!file) {
+    return;
+  }
+
+  if (!file.name.toLowerCase().endsWith(".json")) {
+    importError = "Choose a file with the .json extension.";
+    render();
+    return;
+  }
+
+  try {
+    const importedTeam = validateTeam(JSON.parse(await file.text()) as unknown);
+    team = importedTeam;
+    selectedMembers = new Set(team.map((_, index) => index));
+    importedFileName = file.name;
+    importError = "";
+  } catch (error) {
+    importError =
+      error instanceof SyntaxError
+        ? "The selected file is not valid JSON."
+        : error instanceof Error
+          ? error.message
+          : "Unable to read the selected team file.";
+  }
+  render();
+}
+
 app.addEventListener("click", (event: MouseEvent) => {
   const target = event.target;
   if (!(target instanceof Element)) {
@@ -427,35 +540,4 @@ app.addEventListener("click", (event: MouseEvent) => {
   render();
 });
 
-async function loadTeam(): Promise<void> {
-  try {
-    const response = await fetch("/api/team");
-    if (!response.ok) {
-      const result: unknown = await response.json().catch(() => null);
-      const message =
-        typeof result === "object" &&
-        result !== null &&
-        "error" in result &&
-        typeof result.error === "string"
-          ? result.error
-          : `The team data request failed (${response.status}).`;
-      throw new Error(message);
-    }
-
-    const result: unknown = await response.json();
-    if (!Array.isArray(result)) {
-      throw new Error("The team data response must be a JSON array.");
-    }
-
-    team = result as TeamMember[];
-    selectedMembers = new Set(team.map((_, index) => index));
-  } catch (error) {
-    loadError = error instanceof Error ? error.message : "An unexpected error occurred.";
-  } finally {
-    loading = false;
-    render();
-  }
-}
-
 render();
-void loadTeam();

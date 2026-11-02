@@ -4,12 +4,11 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k -s first -n api,web -c blue,green \"node server/index.mjs --api-only\" \"vite --host 0.0.0.0\"",
+    "dev": "vite --host 0.0.0.0",
     "build": "tsc --noEmit && vite build",
     "start": "node server/index.mjs"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2",
     "typescript": "^5.7.3",
     "vite": "^6.0.7"
   }
