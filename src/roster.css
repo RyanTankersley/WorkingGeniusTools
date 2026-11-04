@@ -92,21 +92,21 @@
 }
 
 .roster-type-genius {
-  border-color: #d8e6da;
-  background: #eff5ef;
-  color: #45684e;
+  border-color: #8eb99a;
+  background: #d5ead9;
+  color: #245333;
 }
 
 .roster-type-competency {
-  border-color: #ebdfc4;
-  background: #faf3e4;
-  color: #8a682e;
+  border-color: #d4a25a;
+  background: #f5dfb9;
+  color: #70430b;
 }
 
 .roster-type-frustration {
-  border-color: #eccfcb;
-  background: #fbf0ee;
-  color: #a44f47;
+  border-color: #d58a81;
+  background: #f4d5d1;
+  color: #7d3029;
 }
 
 .builder-roster-row {
