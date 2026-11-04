@@ -147,6 +147,27 @@ button {
   font-weight: 500;
 }
 
+.header-action {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 13px;
+  border: 1px solid #dce5de;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #355a45;
+  font-size: 11px;
+  font-weight: 650;
+  text-decoration: none;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.header-action:hover {
+  border-color: #b7cdbb;
+  background: #f3f8f3;
+}
+
 .header-type-dots {
   display: flex;
   gap: 3px;
@@ -956,7 +977,7 @@ h1 span {
 }
 
 .assessment-filter.frustrations .assessment-filter-dot {
-  background: #9c83a5;
+  background: #c7665f;
 }
 
 .board-heading {
@@ -1003,7 +1024,7 @@ h1 span {
 
 .frustration-key,
 .frustrations .assessment-dot {
-  background: #9c83a5;
+  background: #c7665f;
 }
 
 .genius-grid {
@@ -1241,15 +1262,15 @@ h1 span {
 }
 
 .person-pill.frustrations {
-  border-color: #d9cde0;
-  background: #f2edf5;
-  color: #46354f;
+  border-color: #e8c9c5;
+  background: #fbefed;
+  color: #633b38;
 }
 
 .person-pill.frustrations:hover,
 .person-pill.frustrations.is-focused {
-  border-color: #ae98bc;
-  background: #e9def0;
+  border-color: #d6948d;
+  background: #f6dfdc;
 }
 
 .person-pill > span:last-child {
