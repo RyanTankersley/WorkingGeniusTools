@@ -1,6 +1,7 @@
 import "./styles.css";
 import "./builder.css";
 import "./roster.css";
+import { displayName, renderRosterTypes, sortTeamByName } from "./roster-view";
 import { geniusTypes, validateTeam, type TeamMember, type WorkingGenius } from "./team-data";
 
 const app: HTMLDivElement =
@@ -68,37 +69,15 @@ function renderTypePicker(
 }
 
 function renderMember(member: TeamMember, index: number): string {
-  const assessments = [
-    { title: "Geniuses", types: member.Geniuses, className: "genius" },
-    { title: "Competencies", types: member.Competencies, className: "competency" },
-    { title: "Frustrations", types: member.Frustrations, className: "frustration" },
-  ];
   return `
-    <article class="team-roster-card">
-      <div class="team-roster-card-heading">
-        <div class="team-roster-member-name">
-          <span class="team-roster-avatar">${escapeHtml(`${member.FNAME[0]}${member.LNAME[0]}`.toUpperCase())}</span>
-          <div><h3>${escapeHtml(member.FNAME)} ${escapeHtml(member.LNAME)}</h3><span>TEAM MEMBER</span></div>
-        </div>
-        <div class="builder-member-actions">
-          <button type="button" class="text-action" data-edit="${index}">Edit</button>
-          <button type="button" class="text-action delete-action" data-delete="${index}">Delete</button>
-        </div>
+    <div class="team-roster-row builder-roster-row">
+      <span class="team-roster-name">${escapeHtml(displayName(member))}</span>
+      <div class="team-roster-types" aria-label="Working Genius types">${renderRosterTypes(member)}</div>
+      <div class="builder-member-actions">
+        <button type="button" class="text-action" data-edit="${index}">Edit</button>
+        <button type="button" class="text-action delete-action" data-delete="${index}">Delete</button>
       </div>
-      <div class="team-roster-assessments">
-        ${assessments
-          .map(
-            ({ title, types, className }) => `
-              <div class="team-roster-assessment ${className}">
-                <span>${title}</span>
-                <div>${types
-                  .map((type) => `<span class="team-roster-tag">${type}</span>`)
-                  .join("")}</div>
-              </div>`,
-          )
-          .join("")}
-      </div>
-    </article>
+    </div>
   `;
 }
 
@@ -163,14 +142,19 @@ function render(): void {
 
       <section class="builder-team-section team-roster-section">
         <div class="builder-team-heading team-roster-heading">
-          <div><span class="section-kicker">YOUR ROSTER</span><h2>Team members <span>${team.length}</span></h2></div>
-          <button type="button" class="download-action" data-download>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0 4-4m-4 4-4-4M5 18v2h14v-2"/></svg>
-            Download JSON
-          </button>
+          <div>
+            <span class="section-kicker">YOUR ROSTER</span>
+            <h2>Team members <span>${team.length}</span></h2>
+            <button type="button" class="download-action" data-download>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0 4-4m-4 4-4-4M5 18v2h14v-2"/></svg>
+              Download JSON
+            </button>
+          </div>
         </div>
         ${team.length
-          ? `<div class="team-roster-list">${team.map(renderMember).join("")}</div>`
+          ? `<div class="team-roster-list">${sortTeamByName(team)
+              .map((member) => renderMember(member, team.indexOf(member)))
+              .join("")}</div>`
           : `<div class="builder-empty"><span class="empty-spark" aria-hidden="true">✳</span><strong>Your team starts here</strong><p>Add a member or import an existing JSON file to build your roster.</p></div>`}
       </section>
       <footer class="page-footer"><span>THE WORKING GENIUS MODEL</span><span>Six types. One stronger team.</span></footer>

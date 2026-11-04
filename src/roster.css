@@ -6,7 +6,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .team-roster-heading .section-kicker {
@@ -38,127 +38,129 @@
 }
 
 .team-roster-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.team-roster-card {
-  min-width: 0;
-  padding: 13px;
+  display: table;
+  width: auto;
+  max-width: 100%;
+  overflow: hidden;
   border: 1px solid #e5e9e4;
-  border-radius: 11px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.84);
 }
 
-.team-roster-card-heading,
-.team-roster-member-name {
-  display: flex;
-  align-items: center;
+.team-roster-row {
+  display: table-row;
 }
 
-.team-roster-card-heading {
-  gap: 8px;
-}
-
-.team-roster-member-name {
-  min-width: 0;
-  gap: 9px;
-}
-
-.team-roster-avatar {
-  display: grid;
-  width: 32px;
-  height: 32px;
-  flex: 0 0 32px;
-  place-items: center;
-  border-radius: 9px;
-  background: #e8f0e9;
-  color: #42624b;
-  font-size: 10px;
-  font-weight: 750;
-}
-
-.team-roster-member-name h3 {
-  overflow: hidden;
-  color: #354139;
-  font-size: 12px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.team-roster-member-name div > span {
-  display: block;
-  margin-top: 3px;
-  color: #99a19b;
-  font-size: 7px;
-  font-weight: 700;
-  letter-spacing: 0.9px;
-}
-
-.team-roster-assessments {
-  display: grid;
-  gap: 7px;
-  margin-top: 12px;
-  padding-top: 10px;
+.team-roster-row + .team-roster-row {
   border-top: 1px solid #edf0ec;
 }
 
-.team-roster-assessment {
-  display: grid;
-  grid-template-columns: 90px minmax(0, 1fr);
-  align-items: center;
-  gap: 7px;
+.team-roster-row + .team-roster-row > * {
+  border-top: 1px solid #edf0ec;
 }
 
-.team-roster-assessment > span {
-  color: #77827a;
-  font-size: 9px;
+.team-roster-name {
+  display: table-cell;
+  padding: 6px 12px;
+  overflow: hidden;
+  color: #354139;
+  font-size: 12px;
   font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
 }
 
-.team-roster-assessment > div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+.team-roster-types {
+  display: table-cell;
+  padding: 6px 10px 6px 3px;
+  white-space: nowrap;
+  vertical-align: middle;
 }
 
-.team-roster-tag {
-  padding: 4px 6px;
-  border: 1px solid #e4e9e4;
-  border-radius: 5px;
-  background: #f9faf8;
-  color: #566259;
-  font-size: 9px;
+.roster-type {
+  display: inline-grid;
+  width: 21px;
+  height: 21px;
+  margin-right: 4px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 750;
+  vertical-align: middle;
 }
 
-.team-roster-assessment.genius .team-roster-tag {
+.roster-type-genius {
   border-color: #d8e6da;
   background: #eff5ef;
   color: #45684e;
 }
 
-.team-roster-assessment.competency .team-roster-tag {
+.roster-type-competency {
   border-color: #ebdfc4;
-  background: #faf6ea;
-  color: #756033;
+  background: #faf3e4;
+  color: #8a682e;
 }
 
-.team-roster-assessment.frustration .team-roster-tag {
+.roster-type-frustration {
   border-color: #eccfcb;
   background: #fbf0ee;
-  color: #864e48;
+  color: #a44f47;
 }
 
-@media (max-width: 680px) {
-  .team-roster-list {
-    grid-template-columns: minmax(0, 1fr);
+.builder-roster-row {
+  white-space: nowrap;
+}
+
+.builder-member-actions {
+  display: table-cell;
+  padding: 4px 8px 4px 2px;
+  text-align: right;
+  vertical-align: middle;
+}
+
+.text-action {
+  padding: 5px 6px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #57705d;
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.text-action:hover {
+  background: #f0f5f0;
+}
+
+.text-action.delete-action {
+  color: #a65c55;
+}
+
+.text-action.delete-action:hover {
+  background: #fbefed;
+}
+
+@media (max-width: 560px) {
+  .team-roster-name {
+    padding-right: 8px;
+    padding-left: 9px;
   }
-}
 
-@media (max-width: 430px) {
-  .team-roster-assessment {
-    grid-template-columns: 78px minmax(0, 1fr);
+  .team-roster-types {
+    padding-right: 6px;
+  }
+
+  .roster-type {
+    width: 19px;
+    height: 19px;
+    margin-right: 2px;
+  }
+
+  .builder-member-actions {
+    padding-right: 5px;
   }
 }

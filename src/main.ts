@@ -1,5 +1,6 @@
 import "./styles.css";
 import "./roster.css";
+import { displayName, renderRosterTypes, sortTeamByName } from "./roster-view";
 import {
   assessments,
   geniusTypes,
@@ -136,12 +137,6 @@ function renderRoster(): string {
     return "";
   }
 
-  const rosterAssessments = [
-    { title: "Geniuses", key: "Geniuses", className: "genius" },
-    { title: "Competencies", key: "Competencies", className: "competency" },
-    { title: "Frustrations", key: "Frustrations", className: "frustration" },
-  ] as const;
-
   return `
     <section class="team-roster-section" aria-labelledby="team-roster-title">
       <div class="team-roster-heading">
@@ -151,30 +146,13 @@ function renderRoster(): string {
         </div>
       </div>
       <div class="team-roster-list">
-        ${team
+        ${sortTeamByName(team)
           .map(
             (member) => `
-              <article class="team-roster-card">
-                <div class="team-roster-card-heading">
-                  <div class="team-roster-member-name">
-                    <span class="team-roster-avatar" aria-hidden="true">${escapeHtml(initials(member))}</span>
-                    <div><h3>${escapeHtml(member.FNAME)} ${escapeHtml(member.LNAME)}</h3><span>TEAM MEMBER</span></div>
-                  </div>
-                </div>
-                <div class="team-roster-assessments">
-                  ${rosterAssessments
-                    .map(
-                      ({ title, key, className }) => `
-                        <div class="team-roster-assessment ${className}">
-                          <span>${title}</span>
-                          <div>${member[key]
-                            .map((type) => `<span class="team-roster-tag">${type}</span>`)
-                            .join("")}</div>
-                        </div>`,
-                    )
-                    .join("")}
-                </div>
-              </article>`,
+              <div class="team-roster-row">
+                <span class="team-roster-name">${escapeHtml(displayName(member))}</span>
+                <div class="team-roster-types" aria-label="Working Genius types">${renderRosterTypes(member)}</div>
+              </div>`,
           )
           .join("")}
       </div>

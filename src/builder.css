@@ -383,6 +383,7 @@
 }
 
 .builder-team-heading {
+  display: block;
   margin-bottom: 12px;
 }
 
@@ -402,6 +403,10 @@
   background: #e9f0e9;
   color: #54705b;
   font-size: 10px;
+}
+
+.builder-team-heading .download-action {
+  margin-top: 9px;
 }
 
 .download-action {
@@ -428,38 +433,6 @@
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 1.7;
-}
-
-.builder-member-actions {
-  display: flex;
-  align-items: center;
-  flex: 0 0 auto;
-  gap: 2px;
-  margin-left: auto;
-}
-
-.text-action {
-  padding: 5px 6px;
-  border: 0;
-  border-radius: 5px;
-  background: transparent;
-  color: #57705d;
-  cursor: pointer;
-  font: inherit;
-  font-size: 10px;
-  font-weight: 600;
-}
-
-.text-action:hover {
-  background: #f0f5f0;
-}
-
-.text-action.delete-action {
-  color: #a65c55;
-}
-
-.text-action.delete-action:hover {
-  background: #fbefed;
 }
 
 .builder-empty {

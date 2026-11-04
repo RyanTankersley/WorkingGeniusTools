@@ -13,7 +13,7 @@ Open the Vite URL shown in the terminal, then use **Upload team JSON** to select
 
 Use **Build a team** in the page header to open the JSON builder. It can import an existing team JSON, add/edit/delete members, infer competencies from each member's selected geniuses and frustrations, and download the completed `team.json`.
 
-After uploading a team on the map page, the full read-only team roster appears above Team Distribution. Distribution filters do not hide roster entries.
+After uploading a team on the map page, a compact read-only roster appears above Team Distribution. Names are sorted by last name, and six letters show each member's geniuses, competencies, and frustrations in category colors. Distribution filters do not hide roster entries.
 
 For production, run `npm run build` and then `npm start`. The Node.js server serves the built page on port 3000. Set `PORT` to change the port.
 
